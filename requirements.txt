@@ -1,0 +1,20 @@
+
+# Análisis de datos y cálculos
+numpy
+pandas
+
+# Visualización (necesario para SHAP y análisis previo)
+matplotlib
+seaborn
+plotly
+
+# Machine Learning y Preprocesamiento
+scikit-learn
+imbalanced-learn
+joblib
+
+# Deep Learning (Redes Neuronales)
+tensorflow
+
+# Explicabilidad del modelo
+shap
