@@ -243,6 +243,15 @@ FEATURE_COLUMNS = [
     "RainToday",
 ]
 
+REGRESSION_TARGET_COLUMNS = [
+    "RainfallTomorrow",
+    "RainfallTomorrow (mm)",
+]
+
+CLASSIFICATION_TARGET_COLUMNS = [
+    "RainTomorrow",
+]
+
 
 def normalize_input_columns(df_in: pd.DataFrame, feature_columns) -> pd.DataFrame:
     df = df_in.rename(columns=INPUT_ALIASES).copy()
@@ -250,6 +259,36 @@ def normalize_input_columns(df_in: pd.DataFrame, feature_columns) -> pd.DataFram
     if missing:
         raise ValueError(f"Faltan columnas requeridas para inferencia: {missing}")
     return df[feature_columns]
+
+
+def first_existing_column(df_in: pd.DataFrame, candidates: list[str]) -> str | None:
+    for col in candidates:
+        if col in df_in.columns:
+            return col
+    return None
+
+
+def normalize_class_actuals(series: pd.Series) -> pd.Series:
+    mapping = {
+        0: "No",
+        1: "Yes",
+        "0": "No",
+        "1": "Yes",
+        "No": "No",
+        "Yes": "Yes",
+        "no": "No",
+        "yes": "Yes",
+        False: "No",
+        True: "Yes",
+        "false": "No",
+        "true": "Yes",
+    }
+
+    normalized = series.map(mapping)
+    as_text = series.astype("string")
+    normalized = normalized.astype("string").fillna(as_text)
+    normalized = normalized.where(~series.isna(), pd.NA)
+    return normalized
 
 
 def run_inference(input_path: Path, output_path: Path, pipeline_path: Path) -> None:
@@ -285,6 +324,21 @@ def run_inference(input_path: Path, output_path: Path, pipeline_path: Path) -> N
             }
         )
 
+        regression_target_col = first_existing_column(df_input, REGRESSION_TARGET_COLUMNS)
+        if regression_target_col is not None:
+            y_real_reg = pd.to_numeric(df_input[regression_target_col], errors="coerce")
+            df_resultados.insert(0, "Valor_Real_Regresion_mm", np.round(y_real_reg, 2))
+        else:
+            df_resultados.insert(
+                0,
+                "Valor_Real_Regresion_mm",
+                pd.Series([pd.NA] * len(df_resultados), dtype="Float64"),
+            )
+            logger.warning(
+                "No se encontro columna real de regresion en input (%s)",
+                REGRESSION_TARGET_COLUMNS,
+            )
+
     # Modo clasificacion: bundle con pipeline logistica + red neuronal clasificadora.
     elif {
         "pipeline_logistica",
@@ -293,11 +347,16 @@ def run_inference(input_path: Path, output_path: Path, pipeline_path: Path) -> N
         pipeline_log = pipeline_bundle["pipeline_logistica"]
         pipeline_nn_cls = pipeline_bundle["pipeline_red_neuronal_clasificacion"]
 
-        pred_log = pipeline_log.predict(X_input)
-        prob_log = pipeline_log.predict_proba(X_input)
+        threshold_log = float(pipeline_bundle.get("threshold_logistica", 0.5))
+        threshold_nn = float(
+            pipeline_bundle.get("threshold_red_neuronal_clasificacion", 0.5)
+        )
 
-        pred_nn = pipeline_nn_cls.predict(X_input)
+        prob_log = pipeline_log.predict_proba(X_input)
+        pred_log = (prob_log[:, 1] >= threshold_log).astype(int)
+
         prob_nn = pipeline_nn_cls.predict_proba(X_input)
+        pred_nn = (prob_nn[:, 1] >= threshold_nn).astype(int)
 
         # Se usa mapeo binario estandar 0/1 a etiquetas del trabajo.
         label_map = {0: "No", 1: "Yes"}
@@ -309,11 +368,30 @@ def run_inference(input_path: Path, output_path: Path, pipeline_path: Path) -> N
                 "Prediccion_Logistica": pred_log_label,
                 "Prob_Logistica_No": np.round(prob_log[:, 0], 4),
                 "Prob_Logistica_Yes": np.round(prob_log[:, 1], 4),
+                "Umbral_Logistica": np.round(np.repeat(threshold_log, len(X_input)), 4),
                 "Prediccion_RedNeuronal": pred_nn_label,
                 "Prob_RedNeuronal_No": np.round(prob_nn[:, 0], 4),
                 "Prob_RedNeuronal_Yes": np.round(prob_nn[:, 1], 4),
+                "Umbral_RedNeuronal": np.round(np.repeat(threshold_nn, len(X_input)), 4),
             }
         )
+
+        classification_target_col = first_existing_column(
+            df_input, CLASSIFICATION_TARGET_COLUMNS
+        )
+        if classification_target_col is not None:
+            y_real_class = normalize_class_actuals(df_input[classification_target_col])
+            df_resultados.insert(0, "Valor_Real_Logistica", y_real_class)
+        else:
+            df_resultados.insert(
+                0,
+                "Valor_Real_Logistica",
+                pd.Series([pd.NA] * len(df_resultados), dtype="string"),
+            )
+            logger.warning(
+                "No se encontro columna real de clasificacion en input (%s)",
+                CLASSIFICATION_TARGET_COLUMNS,
+            )
 
     else:
         raise ValueError(

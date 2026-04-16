@@ -44,7 +44,8 @@ docker run --rm -v "${PWD}\..:/files" tp_libre_aa1 --pipeline /TP_LIBRE/pipeline
 ## Flujo Del Proyecto
 
 1. Ejecutar la seccion 8 del notebook [AAI_TP_Libre.ipynb](AAI_TP_Libre.ipynb) para entrenar y guardar pipelines.
-2. Ejecutar [docker/inferencia.py](docker/inferencia.py) dentro del contenedor mediante los comandos anteriores.
+2. En clasificacion, el bundle guarda los umbrales optimizados (`threshold_logistica` y `threshold_red_neuronal_clasificacion`) y la inferencia los aplica automaticamente.
+3. Ejecutar [docker/inferencia.py](docker/inferencia.py) dentro del contenedor mediante los comandos anteriores.
 
 ## Archivos En Docker
 
@@ -57,12 +58,16 @@ docker run --rm -v "${PWD}\..:/files" tp_libre_aa1 --pipeline /TP_LIBRE/pipeline
 ## Salidas De Inferencia
 
 - Con `pipeline.pkl`:
+  - `Valor_Real_Regresion_mm` (si el input incluye `RainfallTomorrow` o `RainfallTomorrow (mm)`)
   - `Prediccion_Lineal_mm`
   - `Prediccion_RedNeuronal_mm`
 - Con `pipeline_logistica.pkl`:
+  - `Valor_Real_Logistica` (si el input incluye `RainTomorrow`)
   - `Prediccion_Logistica`
   - `Prob_Logistica_No`
   - `Prob_Logistica_Yes`
+  - `Umbral_Logistica`
   - `Prediccion_RedNeuronal`
   - `Prob_RedNeuronal_No`
   - `Prob_RedNeuronal_Yes`
+  - `Umbral_RedNeuronal`
