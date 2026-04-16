@@ -1,4 +1,4 @@
-# MLOps - Pipelines de Inferencia (WeatherAUS)
+# Aprendizaje Automático I - Trabajo Práctico Libre
 
 ## Ejecucion Rapida (Linux, macOS y Windows)
 
