@@ -1,7 +1,5 @@
-# Dependencias mínimas para la inferencia en producción.
-# Las librerías de análisis (matplotlib, seaborn, shap, etc.) NO son necesarias aquí.
+# Dependencias minimas para inferencia y carga de pipelines sklearn.
 
-tensorflow>=2.15.0
 scikit-learn>=1.3.0
 pandas>=2.0.0
 numpy>=1.24.0

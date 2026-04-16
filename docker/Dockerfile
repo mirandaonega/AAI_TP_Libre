@@ -16,5 +16,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 #Guardo el codigo dentro de la carpeta TP_LIBRE del contenedor
 COPY . . 
 
-# Ejecuto el script
-CMD ["python", "inferencia.py"]
+# Ejecuto el script (permite pasar argumentos en docker run)
+ENTRYPOINT ["python", "inferencia.py"]
