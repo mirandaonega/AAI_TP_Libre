@@ -1,1 +1,9 @@
 venv/
+.venv/
+
+# Keep inference outputs versioned in Git.
+!output.csv
+!output_logistica.csv
+
+# Ignore accidental path created by mixed shell volume syntax.
+docker\\../
