@@ -24,8 +24,6 @@ docker run --rm -v "$PWD/..:/files" tp_libre_aa1
 docker run --rm -v "$PWD/..:/files" tp_libre_aa1 --pipeline /TP_LIBRE/pipeline_logistica.pkl --output /files/output_logistica.csv
 ```
 
-Nota: usar estos comandos solo en bash/zsh (Linux/macOS). No mezclar con los comandos de PowerShell.
-
 ### Windows PowerShell
 
 Desde la raiz del proyecto:
